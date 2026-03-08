@@ -1,0 +1,1059 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nagrik AI — Civic Scheme Assistant</title>
+
+<!-- PDF.js for client-side PDF text extraction -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+
+<style>
+/* ── Google Fonts ── */
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ── Design tokens ── */
+:root {
+  --navy:    #0d1b2a;
+  --ink:     #1a2e44;
+  --teal:    #0e9981;
+  --teal-lt: #d1faf3;
+  --amber:   #f59e0b;
+  --red:     #ef4444;
+  --green:   #22c55e;
+  --surface: #f5f7fa;
+  --card:    #ffffff;
+  --border:  #dde3ec;
+  --muted:   #6b7b8f;
+  --text:    #1a2e44;
+  --shadow:  0 2px 16px rgba(13,27,42,.08);
+  --radius:  12px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'Sora', sans-serif;
+  background: var(--surface);
+  color: var(--text);
+  min-height: 100vh;
+}
+
+/* ── Header ── */
+header {
+  background: var(--navy);
+  padding: 0 40px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 1px 0 rgba(255,255,255,.06);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: white;
+  font-weight: 700;
+  font-size: 17px;
+  letter-spacing: -.3px;
+}
+
+.logo-dot {
+  width: 8px; height: 8px;
+  background: var(--teal);
+  border-radius: 50%;
+}
+
+.badge {
+  background: rgba(255,255,255,.1);
+  color: rgba(255,255,255,.7);
+  font-size: 11px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 20px;
+  letter-spacing: .4px;
+  text-transform: uppercase;
+}
+
+/* ── Layout ── */
+.layout {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 36px 24px 80px;
+}
+
+/* ── Step indicator ── */
+.steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin-bottom: 32px;
+}
+
+.step {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+  flex: 1;
+  position: relative;
+}
+
+.step::after {
+  content: '';
+  position: absolute;
+  left: 36px;
+  right: 0;
+  height: 2px;
+  background: var(--border);
+  top: 14px;
+  z-index: 0;
+}
+
+.step:last-child::after { display: none; }
+
+.step-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  background: var(--border);
+  color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 12px;
+  font-weight: 700;
+  z-index: 1;
+  flex-shrink: 0;
+  transition: all .3s;
+}
+
+.step.active .step-num {
+  background: var(--teal);
+  color: white;
+}
+
+.step.done .step-num {
+  background: var(--navy);
+  color: white;
+}
+
+.step.done::after, .step.active::after {
+  background: var(--teal);
+}
+
+.step.active { color: var(--teal); }
+.step.done   { color: var(--navy); }
+
+/* ── Card ── */
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  padding: 28px 32px;
+  margin-bottom: 20px;
+  box-shadow: var(--shadow);
+  transition: opacity .3s;
+}
+
+.card.dimmed { opacity: .45; pointer-events: none; }
+
+.card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 22px;
+}
+
+.card-icon {
+  width: 38px; height: 38px;
+  border-radius: 9px;
+  background: var(--teal-lt);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--navy);
+}
+
+.card-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+}
+
+/* ── Textarea ── */
+textarea {
+  width: 100%;
+  height: 150px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  resize: vertical;
+  outline: none;
+  color: var(--text);
+  transition: border-color .2s;
+  background: #fafbfc;
+}
+
+textarea:focus { border-color: var(--teal); background: white; }
+
+/* ── Divider ── */
+.or-divider {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin: 18px 0;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: .6px;
+}
+
+.or-divider::before, .or-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--border);
+}
+
+/* ── File drop zone ── */
+.drop-zone {
+  border: 2px dashed var(--border);
+  border-radius: 10px;
+  padding: 28px;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+  background: #fafbfc;
+  position: relative;
+}
+
+.drop-zone:hover, .drop-zone.drag-over {
+  border-color: var(--teal);
+  background: var(--teal-lt);
+}
+
+.drop-zone input[type=file] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.drop-icon { font-size: 28px; margin-bottom: 8px; display: block; }
+
+.drop-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.drop-hint {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 4px;
+}
+
+.file-selected {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+  background: var(--teal-lt);
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--teal);
+  display: none;
+}
+
+.file-selected .remove-file {
+  margin-left: auto;
+  cursor: pointer;
+  font-size: 16px;
+  opacity: .7;
+  background: none;
+  border: none;
+  color: var(--teal);
+  padding: 0;
+}
+
+/* ── Controls row ── */
+.controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.lang-select {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 500;
+}
+
+.lang-select select {
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 13px;
+  background: white;
+  cursor: pointer;
+  outline: none;
+  color: var(--text);
+}
+
+.lang-select select:focus { border-color: var(--teal); }
+
+/* ── Buttons ── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 22px;
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  border: none;
+  transition: all .2s;
+}
+
+.btn-primary {
+  background: var(--teal);
+  color: white;
+}
+
+.btn-primary:hover { background: #0b877e; transform: translateY(-1px); box-shadow: 0 4px 14px rgba(14,153,129,.3); }
+.btn-primary:active { transform: translateY(0); }
+.btn-primary:disabled { background: #a0b0be; cursor: not-allowed; transform: none; box-shadow: none; }
+
+.btn-secondary {
+  background: white;
+  color: var(--ink);
+  border: 1.5px solid var(--border);
+}
+
+.btn-secondary:hover { border-color: var(--teal); color: var(--teal); }
+
+/* ── Spinner ── */
+.spinner {
+  width: 16px; height: 16px;
+  border: 2px solid rgba(255,255,255,.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin .6s linear infinite;
+  display: none;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Question inputs ── */
+.question-item {
+  margin-bottom: 16px;
+  animation: fadeUp .3s ease both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.q-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: 6px;
+  display: block;
+}
+
+.q-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid var(--border);
+  border-radius: 8px;
+  font-family: 'Sora', sans-serif;
+  font-size: 14px;
+  outline: none;
+  background: #fafbfc;
+  color: var(--text);
+  transition: border-color .2s;
+}
+
+.q-input:focus { border-color: var(--teal); background: white; }
+
+.empty-state {
+  text-align: center;
+  padding: 30px;
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 8px; display: block; }
+
+/* ── Results ── */
+.result-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.result-block {
+  border-radius: 10px;
+  padding: 18px 20px;
+  animation: fadeUp .4s ease both;
+}
+
+.result-block.summary-block { background: #f0f9ff; border: 1px solid #bae6fd; }
+.result-block.benefit-block { background: #f0fdf4; border: 1px solid #bbf7d0; }
+.result-block.steps-block   { background: #fffbeb; border: 1px solid #fed7aa; }
+
+.result-block-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .8px;
+  margin-bottom: 8px;
+  color: var(--muted);
+}
+
+.result-block p { font-size: 14px; line-height: 1.7; color: var(--ink); }
+
+/* ── Eligibility badge ── */
+.eligibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 18px;
+  border-radius: 30px;
+  font-weight: 700;
+  font-size: 15px;
+  margin: 16px 0;
+}
+
+.badge-eligible    { background: #dcfce7; color: #16a34a; }
+.badge-not         { background: #fee2e2; color: #dc2626; }
+.badge-possible    { background: #fef3c7; color: #d97706; }
+.badge-unknown     { background: var(--border); color: var(--muted); }
+
+/* ── Similar schemes ── */
+.scheme-list { list-style: none; margin-top: 4px; }
+
+.scheme-item {
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+  font-size: 13px;
+}
+
+.scheme-item:last-child { border-bottom: none; }
+.scheme-name { font-weight: 600; color: var(--navy); }
+.scheme-reason { color: var(--muted); margin-top: 2px; }
+
+/* ── Audio ── */
+.audio-wrap {
+  margin-top: 16px;
+  background: #f8f8f8;
+  border-radius: 10px;
+  padding: 14px 18px;
+  display: none;
+}
+
+.audio-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  margin-bottom: 8px;
+}
+
+audio { width: 100%; outline: none; }
+
+/* ── OCR preview ── */
+.ocr-preview {
+  margin-top: 14px;
+  background: #f8fafc;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 12px 14px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  line-height: 1.6;
+  color: var(--muted);
+  max-height: 100px;
+  overflow-y: auto;
+  display: none;
+  white-space: pre-wrap;
+}
+
+/* ── Error / Toast ── */
+.toast {
+  position: fixed;
+  bottom: 28px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--red);
+  color: white;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  box-shadow: 0 4px 20px rgba(0,0,0,.2);
+  opacity: 0;
+  transition: all .3s;
+  z-index: 999;
+  pointer-events: none;
+  max-width: 420px;
+  text-align: center;
+}
+
+.toast.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+/* ── Progress bar ── */
+.progress-bar {
+  height: 3px;
+  background: var(--border);
+  border-radius: 99px;
+  overflow: hidden;
+  margin-bottom: 24px;
+  display: none;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--teal);
+  border-radius: 99px;
+  width: 0;
+  transition: width .5s ease;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  header { padding: 0 18px; }
+  .layout { padding: 20px 14px 60px; }
+  .card { padding: 20px 18px; }
+  .controls { flex-direction: column; align-items: stretch; }
+  .btn { justify-content: center; }
+}
+</style>
+</head>
+
+<body>
+
+<!-- ── Header ── -->
+<header>
+  <div class="logo">
+    <div class="logo-dot"></div>
+    Nagrik AI
+  </div>
+  <span class="badge">Civic Scheme Assistant</span>
+</header>
+
+<!-- ── Progress ── -->
+<div class="layout">
+
+  <div class="progress-bar" id="progressBar">
+    <div class="progress-fill" id="progressFill"></div>
+  </div>
+
+  <!-- Step indicator -->
+  <div class="steps">
+    <div class="step active" id="step1">
+      <div class="step-num">1</div>
+      Upload Scheme
+    </div>
+    <div class="step" id="step2">
+      <div class="step-num">2</div>
+      Answer Questions
+    </div>
+    <div class="step" id="step3">
+      <div class="step-num">3</div>
+      View Results
+    </div>
+  </div>
+
+  <!-- ── Card 1: Document Input ── -->
+  <div class="card" id="card1">
+    <div class="card-header">
+      <div class="card-icon">📄</div>
+      <div>
+        <div class="card-title">Paste or Upload Scheme Document</div>
+        <div class="card-sub">Supports text paste, PDF files, and images (JPG/PNG)</div>
+      </div>
+    </div>
+
+    <textarea id="doc" placeholder="Paste the scheme text here — e.g. PM Kisan Samman Nidhi, NSP scholarship, Ayushman Bharat details..."></textarea>
+
+    <div class="or-divider">or upload a file</div>
+
+    <!-- Drop zone -->
+    <div class="drop-zone" id="dropZone">
+      <input type="file" id="fileUpload" accept="image/*,.pdf">
+      <span class="drop-icon">☁️</span>
+      <div class="drop-label">Drag & drop or click to browse</div>
+      <div class="drop-hint">PDF documents · JPG · PNG · up to 10 MB</div>
+    </div>
+
+    <!-- Selected file pill -->
+    <div class="file-selected" id="filePill">
+      <span id="fileIcon">📎</span>
+      <span id="fileName">—</span>
+      <button class="remove-file" id="removeFile" title="Remove file">✕</button>
+    </div>
+
+    <!-- OCR preview (shown after extraction) -->
+    <div class="ocr-preview" id="ocrPreview"></div>
+
+    <div class="controls">
+      <div class="lang-select">
+        🌐 <select id="lang">
+          <option value="english">English</option>
+          <option value="hindi">हिंदी</option>
+          <option value="tamil">தமிழ்</option>
+        </select>
+      </div>
+
+      <button class="btn btn-primary" id="analyzeBtn">
+        <span class="spinner" id="spin1"></span>
+        <span id="analyzeTxt">Analyse Scheme →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 2: Questions ── -->
+  <div class="card dimmed" id="card2">
+    <div class="card-header">
+      <div class="card-icon">🙋</div>
+      <div>
+        <div class="card-title">Eligibility Questions</div>
+        <div class="card-sub">Answer based on your personal details</div>
+      </div>
+    </div>
+
+    <div id="questions">
+      <div class="empty-state">
+        <span class="empty-icon">🔍</span>
+        Questions will appear after you analyse the scheme above
+      </div>
+    </div>
+
+    <div id="checkBtnWrap" style="margin-top:22px; display:none;">
+      <button class="btn btn-primary" id="checkBtn">
+        <span class="spinner" id="spin2"></span>
+        <span id="checkTxt">Check My Eligibility →</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Card 3: Results ── -->
+  <div class="card dimmed" id="card3">
+    <div class="card-header">
+      <div class="card-icon">✅</div>
+      <div>
+        <div class="card-title">Your Personalised Results</div>
+        <div class="card-sub">AI-generated eligibility analysis</div>
+      </div>
+    </div>
+
+    <div id="resultsArea">
+      <div class="empty-state">
+        <span class="empty-icon">📊</span>
+        Results will appear here after checking eligibility
+      </div>
+    </div>
+
+    <div class="audio-wrap" id="audioWrap">
+      <div class="audio-label">🔊 Listen to summary</div>
+      <audio id="audioPlayer" controls></audio>
+    </div>
+  </div>
+
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- ───────────── SCRIPT ───────────── -->
+<script>
+// PDF.js worker
+pdfjsLib.GlobalWorkerOptions.workerSrc =
+  'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+const API = "https://jtpd55os3j.execute-api.your-region.amazonaws.com/default/";
+
+let currentQuestions  = [];
+let documentTextCache = "";   // stores OCR'd or pasted text for reuse in personalize call
+let selectedFile      = null;
+
+// ── Toast helper ────────────────────────────────
+function showToast(msg, duration = 4500) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), duration);
+}
+
+// ── Progress bar ────────────────────────────────
+function setProgress(pct) {
+  const bar = document.getElementById('progressBar');
+  bar.style.display = 'block';
+  document.getElementById('progressFill').style.width = pct + '%';
+  if (pct >= 100) setTimeout(() => { bar.style.display = 'none'; }, 600);
+}
+
+// ── Step tracker ────────────────────────────────
+function setStep(n) {
+  [1, 2, 3].forEach(i => {
+    const el = document.getElementById('step' + i);
+    el.classList.remove('active', 'done');
+    if (i < n) el.classList.add('done');
+    else if (i === n) el.classList.add('active');
+  });
+}
+
+// ── Card dimming ────────────────────────────────
+function enableCard(id) {
+  document.getElementById(id).classList.remove('dimmed');
+}
+
+// ── Spinner helpers ─────────────────────────────
+function setBusy(btnId, spinId, txtId, label, busy) {
+  document.getElementById(btnId).disabled = busy;
+  document.getElementById(spinId).style.display = busy ? 'block' : 'none';
+  document.getElementById(txtId).textContent = busy ? label : (
+    btnId === 'analyzeBtn' ? 'Analyse Scheme →' : 'Check My Eligibility →'
+  );
+}
+
+// ── File type detection ──────────────────────────
+function getFileType(file) {
+  if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) return 'pdf';
+  return 'image';
+}
+
+// ── PDF text extraction via PDF.js ──────────────
+async function extractPdfText(file) {
+  const buffer   = await file.arrayBuffer();
+  const pdf      = await pdfjsLib.getDocument({ data: buffer }).promise;
+  const pages    = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page      = await pdf.getPage(i);
+    const content   = await page.getTextContent();
+    const pageText  = content.items.map(it => it.str).join(' ');
+    pages.push(pageText);
+  }
+
+  return pages.join('\n\n');
+}
+
+// ── File selection ───────────────────────────────
+document.getElementById('fileUpload').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  await handleFile(file);
+});
+
+// Drag-and-drop
+const dz = document.getElementById('dropZone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.classList.add('drag-over'); });
+dz.addEventListener('dragleave', () => dz.classList.remove('drag-over'));
+dz.addEventListener('drop', async (e) => {
+  e.preventDefault();
+  dz.classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) await handleFile(file);
+});
+
+async function handleFile(file) {
+  // Validate size
+  if (file.size > 10 * 1024 * 1024) {
+    showToast('File too large — maximum size is 10 MB');
+    return;
+  }
+
+  selectedFile = file;
+  const ftype  = getFileType(file);
+
+  // Update pill
+  document.getElementById('fileIcon').textContent = ftype === 'pdf' ? '📕' : '🖼️';
+  document.getElementById('fileName').textContent  = file.name;
+  document.getElementById('filePill').style.display = 'flex';
+
+  // If PDF → extract text client-side immediately and show preview
+  if (ftype === 'pdf') {
+    try {
+      const extracted = await extractPdfText(file);
+      documentTextCache = extracted;
+
+      // Show a short preview
+      const preview = document.getElementById('ocrPreview');
+      preview.textContent = extracted.slice(0, 400) + (extracted.length > 400 ? '…' : '');
+      preview.style.display = 'block';
+    } catch (err) {
+      console.warn('PDF.js extraction failed, will OCR server-side:', err);
+    }
+  }
+}
+
+// Remove file
+document.getElementById('removeFile').addEventListener('click', () => {
+  selectedFile = null;
+  documentTextCache = '';
+  document.getElementById('fileUpload').value = '';
+  document.getElementById('filePill').style.display = 'none';
+  document.getElementById('ocrPreview').style.display = 'none';
+});
+
+// ── API wrapper ──────────────────────────────────
+async function callAPI(payload) {
+  const res = await fetch(API, {
+    method:  'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body:    JSON.stringify(payload)
+  });
+
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error || `HTTP ${res.status}`);
+  }
+
+  const raw = await res.json();
+
+  // FIX: handle both direct JSON and Lambda proxy {"body":"..."} wrapping
+  if (raw && typeof raw.body === 'string') {
+    return JSON.parse(raw.body);
+  }
+  return raw;
+}
+
+// ── STEP 1 — Analyse Scheme ──────────────────────
+document.getElementById('analyzeBtn').addEventListener('click', async () => {
+  const pastedText = document.getElementById('doc').value.trim();
+  const lang       = document.getElementById('lang').value;
+
+  // Determine what to send
+  let payload = { mode: 'questions', language: lang };
+  let hasContent = false;
+
+  if (pastedText) {
+    payload.document_text = pastedText;
+    documentTextCache = pastedText;
+    hasContent = true;
+  } else if (selectedFile) {
+    const ftype = getFileType(selectedFile);
+
+    if (ftype === 'pdf' && documentTextCache) {
+      // PDF already extracted client-side
+      payload.document_text = documentTextCache;
+      hasContent = true;
+    } else {
+      // Send file bytes for server-side OCR (images, or PDF fallback)
+      const b64 = await fileToBase64(selectedFile);
+      payload.file      = b64;
+      payload.file_type = ftype;
+      hasContent = true;
+    }
+  }
+
+  if (!hasContent) {
+    showToast('Please paste scheme text or upload a file first');
+    return;
+  }
+
+  setBusy('analyzeBtn', 'spin1', 'analyzeTxt', 'Analysing…', true);
+  setProgress(20);
+
+  try {
+    const data = await callAPI(payload);
+    setProgress(60);
+
+    currentQuestions = data.questions || [];
+
+    // FIX: persist document text from what WE sent (always available),
+    // falling back to what the server echoes (only present on cache miss).
+    // Previously, a backend cache hit never echoed document_text back, so
+    // documentTextCache stayed empty and the personalize call had no document.
+    if (payload.document_text) documentTextCache = payload.document_text;
+    else if (data.document_text) documentTextCache = data.document_text;
+
+    // Render questions
+    if (currentQuestions.length === 0) {
+      document.getElementById('questions').innerHTML =
+        '<div class="empty-state"><span class="empty-icon">⚠️</span>No eligibility questions could be extracted. Try a more detailed document.</div>';
+    } else {
+      let html = '';
+      currentQuestions.forEach((q, i) => {
+        html += `
+          <div class="question-item" style="animation-delay:${i * 80}ms">
+            <label class="q-label" for="q${i}">${q}</label>
+            <input class="q-input" type="text" id="q${i}" placeholder="Your answer…">
+          </div>`;
+      });
+      document.getElementById('questions').innerHTML = html;
+      document.getElementById('checkBtnWrap').style.display = 'block';
+    }
+
+    enableCard('card2');
+    setStep(2);
+    setProgress(100);
+    document.getElementById('card2').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Analysis failed: ' + err.message);
+    setProgress(0);
+  } finally {
+    setBusy('analyzeBtn', 'spin1', 'analyzeTxt', '', false);
+  }
+});
+
+// ── STEP 2 — Check Eligibility ───────────────────
+document.getElementById('checkBtn').addEventListener('click', async () => {
+  const lang    = document.getElementById('lang').value;
+  const docText = document.getElementById('doc').value.trim() || documentTextCache;
+
+  if (!docText) {
+    showToast('Document text is missing — please re-analyse');
+    return;
+  }
+
+  // FIX: key answers by the actual question text so the AI has context.
+  // Sending {q0: "80000"} gives Gemini no idea what q0 means.
+  const answers = {};
+  currentQuestions.forEach((q, i) => {
+    answers[q] = (document.getElementById(`q${i}`)?.value || '').trim();
+  });
+
+  setBusy('checkBtn', 'spin2', 'checkTxt', 'Checking…', true);
+  setProgress(30);
+
+  try {
+    const data = await callAPI({
+      mode:          'personalize',
+      document_text: docText,
+      answers:       answers,
+      language:      lang
+    });
+
+    setProgress(75);
+    renderResults(data);
+    enableCard('card3');
+    setStep(3);
+    setProgress(100);
+    document.getElementById('card3').scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+  } catch (err) {
+    console.error(err);
+    showToast('Eligibility check failed: ' + err.message);
+    setProgress(0);
+  } finally {
+    setBusy('checkBtn', 'spin2', 'checkTxt', '', false);
+  }
+});
+
+// ── Render results ───────────────────────────────
+function renderResults(data) {
+  const area = document.getElementById('resultsArea');
+
+  const summary   = data.summary   || {};
+  const eligStr   = data.eligibility_result || '';
+  const schemes   = data.similar_schemes    || [];
+
+  // Eligibility badge
+  let badgeClass = 'badge-unknown';
+  let badgeIcon  = '❓';
+  const el = eligStr.toLowerCase();
+
+  if (el.includes('not eligible'))        { badgeClass = 'badge-not';      badgeIcon = '✗'; }
+  else if (el.includes('possibly eligible')) { badgeClass = 'badge-possible'; badgeIcon = '⚠'; }
+  else if (el.includes('eligible'))          { badgeClass = 'badge-eligible'; badgeIcon = '✓'; }
+  // "unable to determine" falls through to badge-unknown (grey) intentionally
+
+  let html = '';
+
+  if (eligStr) {
+    html += `<div class="eligibility-badge ${badgeClass}">${badgeIcon} ${eligStr}</div>`;
+  }
+
+  const blocks = [
+    { key: 'summary',    label: 'Summary',    cls: 'summary-block' },
+    { key: 'benefits',   label: 'Benefits',   cls: 'benefit-block' },
+    { key: 'next_steps', label: 'Next Steps', cls: 'steps-block'   }
+  ];
+
+  html += '<div class="result-grid">';
+  blocks.forEach(b => {
+    const val = summary[b.key];
+    if (val) {
+      html += `
+        <div class="result-block ${b.cls}">
+          <div class="result-block-title">${b.label}</div>
+          <p>${val}</p>
+        </div>`;
+    }
+  });
+
+  if (schemes.length) {
+    html += `
+      <div class="result-block" style="background:#f8f0ff;border:1px solid #e9d5ff;">
+        <div class="result-block-title">Similar Schemes</div>
+        <ul class="scheme-list">`;
+    schemes.forEach(s => {
+      html += `
+          <li class="scheme-item">
+            <div class="scheme-name">${s.scheme}</div>
+            <div class="scheme-reason">${s.reason}</div>
+          </li>`;
+    });
+    html += '</ul></div>';
+  }
+
+  html += '</div>';
+
+  area.innerHTML = html;
+
+  // Audio
+  if (data.audio_url) {
+    const wrap  = document.getElementById('audioWrap');
+    const audio = document.getElementById('audioPlayer');
+    audio.src            = data.audio_url;
+    wrap.style.display   = 'block';
+  }
+}
+
+// ── File to base64 util ───────────────────────────
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.readAsDataURL(file);
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+  });
+}
+</script>
+
+</body>
+</html>
