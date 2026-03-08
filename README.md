@@ -110,3 +110,22 @@ Google Gemini 2.5 Flash
 ## Environment Variables
 
 The Lambda function requires:
+GEMINI_API_KEY
+S3_BUCKET
+DEBUG
+
+
+---
+
+## Future Improvements
+
+• Vector search for large documents  
+• More language support  
+• Government scheme database integration  
+• Mobile app interface  
+
+---
+
+## License
+
+MIT License
