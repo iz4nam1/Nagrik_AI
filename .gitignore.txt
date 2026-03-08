@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment variables
+.env
+
+# Mac junk
+.DS_Store
+
+# Logs
+*.log
+
+# Node / frontend
+node_modules/
+
+# IDE files
+.vscode/
+.idea/
